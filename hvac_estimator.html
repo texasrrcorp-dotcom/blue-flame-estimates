@@ -1,0 +1,513 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Blue Flame Estimate Builder</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.2.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}:root{--bg:#fff;--bg2:#f7f7f6;--tx:#1a1a1a;--tx2:#666;--tx3:#999;--bd:rgba(0,0,0,.1);--bd2:rgba(0,0,0,.18);--bl:#185FA5;--blb:#E6F1FB;--blt:#0C447C;--gn:#3B6D11;--gnb:#EAF3DE;--gnt:#27500A;--amb:#FAEEDA;--amt:#633806;--rd:#A32D2D;--r:8px;--f:'Inter',-apple-system,sans-serif}
+body{font-family:var(--f);font-size:14px;color:var(--tx);background:var(--bg2)}
+.top{background:var(--bg);border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:48px;position:sticky;top:0;z-index:100}
+.logo{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px}.li{width:26px;height:26px;background:linear-gradient(135deg,#185FA5,#2980b9);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px}
+.tabs{display:flex;gap:2px;overflow-x:auto}.tab{padding:7px 11px;font-size:12px;cursor:pointer;border-radius:var(--r);color:var(--tx2);border:none;background:none;font-family:var(--f);white-space:nowrap}.tab:hover{background:var(--bg2)}.tab.on{background:var(--bg2);color:var(--tx);font-weight:500}
+.pg{display:none;padding:16px;max-width:1100px;margin:0 auto}.pg.on{display:block}
+.cd{background:var(--bg);border:.5px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+.hd{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fl{display:flex;flex-direction:column;gap:3px}.fl label{font-size:12px;color:var(--tx2);font-weight:500}
+.fl input,.fl select,.fl textarea{font-family:var(--f);font-size:13px;padding:7px 9px;border:.5px solid var(--bd2);border-radius:var(--r);background:var(--bg);color:var(--tx);width:100%}
+.bt{font-family:var(--f);font-size:12px;padding:6px 12px;border-radius:var(--r);cursor:pointer;display:inline-flex;align-items:center;gap:4px;border:.5px solid var(--bd2);background:var(--bg);color:var(--tx)}.bt:hover{background:var(--bg2)}.btb{background:var(--bl);color:#fff;border-color:var(--bl)}.btd{color:var(--rd);border-color:rgba(163,45,45,.3)}
+.sb{background:var(--bg2);border-radius:var(--r);padding:11px 13px}.sr{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}.sr.tot{font-size:15px;font-weight:600;border-top:.5px solid var(--bd2);padding-top:7px;margin-top:5px}
+.tc{border:.5px solid var(--bd);border-radius:12px;overflow:hidden;cursor:pointer;background:var(--bg);position:relative}.tc:hover{border-color:var(--bl)}.tc.sel{border:2px solid var(--bl);background:var(--blb)}
+.tc .ck{display:none;position:absolute;top:6px;left:6px;width:18px;height:18px;border-radius:50%;background:var(--bl);align-items:center;justify-content:center}.tc.sel .ck{display:flex}
+.ar{display:flex;align-items:center;justify-content:space-between;padding:8px 11px;border:.5px solid var(--bd);border-radius:var(--r);cursor:pointer;margin-bottom:5px;background:var(--bg)}.ar:hover,.ar.sel{background:var(--bg2)}.ar.sel{border-color:var(--bl)}
+.cb{width:14px;height:14px;border:.5px solid var(--bd2);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.ar.sel .cb{background:var(--bl);border-color:var(--bl)}
+.wi{display:flex;align-items:flex-start;gap:6px;margin-bottom:3px;font-size:12px;line-height:1.5;color:var(--tx2)}.wi i{color:var(--gn);flex-shrink:0;margin-top:2px}
+.eli{display:flex;align-items:center;gap:6px;margin-bottom:5px}.eli input{flex:1;font-family:var(--f);font-size:12px;padding:5px 7px;border:.5px solid var(--bd2);border-radius:var(--r)}
+.ok{background:var(--gnb);border:.5px solid #C0DD97;border-radius:var(--r);padding:11px;display:none;align-items:center;gap:9px}.ok.show{display:flex}
+@media(max-width:768px){.g2{grid-template-columns:1fr}#dash-metrics{grid-template-columns:1fr 1fr !important}}
+</style></head><body>
+<div class="top"><div class="logo"><div class="li"><i class="ti ti-flame"></i></div><span id="brand">Blue Flame Estimates</span></div>
+<div class="tabs"><button class="tab on" onclick="go('bld')">Builder</button><button class="tab" onclick="go('lib')">Library</button><button class="tab" onclick="go('est')">Dashboard</button><button class="tab" onclick="go('cli')">Client</button><button class="tab" onclick="go('set')">Settings</button></div></div>
+
+<!-- BUILDER -->
+<div class="pg on" id="p-bld">
+<div style="font-size:19px;font-weight:700;margin-bottom:14px">New Estimate</div>
+<div class="cd"><div class="hd">Customer <span id="db-status" style="float:right;font-size:10px;padding:2px 6px;border-radius:10px"></span></div>
+<div class="fl" style="margin-bottom:8px"><label>Search existing customer (name or phone)</label><input id="b-search" placeholder="Start typing to search..." oninput="searchCustomer(this.value)"><div id="b-results" style="margin-top:4px"></div></div>
+<div class="g2" style="margin-bottom:8px"><div class="fl"><label>First name</label><input id="b-first" placeholder="John"></div><div class="fl"><label>Last name</label><input id="b-last" placeholder="Smith"></div></div><div class="g2" style="margin-bottom:8px"><div class="fl"><label>Phone</label><input id="b-phone"></div><div class="fl"><label>Email</label><input id="b-email"></div></div><div class="fl"><label>Address</label><input id="b-addr" placeholder="123 Oak Ln, Cypress TX 77429"></div><input type="hidden" id="b-cust-id"></div>
+<div class="cd"><div class="hd">Options</div><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center"><div class="fl"><label>Ductwork</label><select id="b-duct" onchange="rc()"><option value="0">Reusing ($0)</option><option value="3800">Small ($3,800)</option><option value="4200">Medium ($4,200)</option><option value="5500">Large ($5,500)</option></select></div><label style="font-size:12px;cursor:pointer;margin-top:14px"><input type="checkbox" id="b-fin" checked> Financing</label><label style="font-size:12px;cursor:pointer;margin-top:14px"><input type="checkbox" id="b-tax"> Tax</label><div class="fl" style="width:70px"><label>Tax%</label><input id="b-taxr" type="number" value="8.25" step=".01"></div></div></div>
+<!-- ZONES -->
+<div id="zones"></div>
+<button class="bt" onclick="addZone()" style="margin-bottom:14px"><i class="ti ti-plus"></i> Add another unit</button>
+<!-- ADD-ONS from library -->
+<div class="cd"><div class="hd">Add-ons from library (IAQ, zone boards, dampers, accessories)</div><div id="addon-pick"></div><button class="bt" onclick="showAddonPicker()" style="margin-top:6px"><i class="ti ti-plus"></i> Add from library</button><div id="addon-list" style="margin-top:8px"></div></div>
+<!-- WHAT'S INCLUDED -->
+<div class="cd"><div class="hd">What's Included (editable)</div><div id="wi-list"></div><button class="bt" onclick="wiI.push('New item');rWI()" style="margin-top:4px"><i class="ti ti-plus"></i></button></div>
+<!-- WARRANTIES -->
+<div class="cd"><div class="hd">Warranties (editable)</div><div id="wa-list"></div><button class="bt" onclick="waI.push({d:'1 Year',n:'New',t:''});rWA()" style="margin-top:4px"><i class="ti ti-plus"></i></button></div>
+<!-- PROFIT -->
+<div class="cd"><div class="hd">Profit summary</div><div class="sb" id="ps"></div><div style="margin-top:10px;display:flex;gap:8px"><button class="bt btb" onclick="genLink()"><i class="ti ti-link"></i> Generate link</button><button class="bt" onclick="go('cli')"><i class="ti ti-eye"></i> Preview</button></div><div id="lo" style="display:none;margin-top:10px"><div class="sb" id="lu" style="font-family:monospace;font-size:11px;word-break:break-all"></div><div style="margin-top:6px"><img id="qr" style="width:100px;height:100px;border-radius:var(--r);border:.5px solid var(--bd)"></div></div></div>
+</div>
+
+<!-- LIBRARY -->
+<div class="pg" id="p-lib">
+<div style="display:flex;justify-content:space-between;margin-bottom:14px"><div style="font-size:19px;font-weight:700">Library</div><button class="bt btb" onclick="openEd()"><i class="ti ti-plus"></i> Add</button></div>
+<div id="emod" class="cd" style="display:none;border:2px solid var(--bl);margin-bottom:14px"><div style="font-size:16px;font-weight:600;margin-bottom:10px" id="et">Add unit</div><div class="g2" style="margin-bottom:8px"><div class="fl"><label>Name</label><input id="e-nm"></div><div class="fl"><label>Category</label><select id="e-cat"><option value="system">System</option><option value="condenser">Condenser</option><option value="furnace">Furnace</option><option value="air-handler">Air Handler</option><option value="coil">Coil</option><option value="heat-kit">Heat Kit</option><option value="control">Control</option><option value="iaq">IAQ</option><option value="zone-board">Zone Board</option><option value="damper">Damper</option><option value="accessory">Accessory</option></select></div></div><div class="g2" style="margin-bottom:8px"><div class="fl"><label>Tons</label><select id="e-tn"><option value="">N/A</option><option>1.5</option><option>2</option><option>2.5</option><option>3</option><option>3.5</option><option>4</option><option>5</option></select></div><div class="fl"><label>Spec</label><input id="e-sp"></div></div><div class="g2" style="margin-bottom:8px"><div class="fl"><label>Cost$</label><input id="e-co" type="number"></div><div class="fl"><label>Sell$</label><input id="e-se" type="number"></div></div><div class="g2" style="margin-bottom:8px"><div class="fl"><label>Part#</label><input id="e-pt"></div><div class="fl"><label>Job type</label><select id="e-st"><option value="">N/A</option><option value="gas-ac">Gas</option><option value="ac-elec">Electric</option><option value="hp-elec">Heat Pump</option><option value="dual">Dual Fuel</option></select></div></div><div class="g2" style="margin-bottom:8px"><div class="fl"><label>Description</label><input id="e-ds"></div><div class="fl"><label>Image URL</label><input id="e-im"></div></div><div style="margin-bottom:8px"><label style="font-size:12px;color:var(--tx2)">Or upload photo</label><input type="file" id="e-file" accept="image/*" onchange="var r=new FileReader();r.onload=function(e){document.getElementById('e-im').value=e.target.result};r.readAsDataURL(this.files[0])" style="font-size:12px;margin-top:3px"></div><div class="fl" style="margin-bottom:10px"><label>Warranty</label><input id="e-wa"></div><div style="display:flex;gap:6px"><button class="bt btb" onclick="saveEd()">Save</button><button class="bt" onclick="closeEd()">Cancel</button><button class="bt btd" id="e-del" onclick="delEd()" style="display:none"><i class="ti ti-trash"></i></button></div></div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"><select id="lf-c" onchange="rL()" style="font-family:var(--f);font-size:12px;padding:5px 7px;border:.5px solid var(--bd2);border-radius:var(--r)"><option value="all">All</option><option value="system">Systems</option><option value="condenser">Condensers</option><option value="furnace">Furnaces</option><option value="air-handler">Air Handlers</option><option value="coil">Coils</option><option value="heat-kit">Heat Kits</option><option value="control">Controls</option><option value="iaq">IAQ</option><option value="zone-board">Zone Boards</option><option value="damper">Dampers</option><option value="accessory">Accessories</option></select><input id="lf-s" placeholder="Search..." oninput="rL()" style="font-family:var(--f);font-size:12px;padding:5px 7px;border:.5px solid var(--bd2);border-radius:var(--r);flex:1;min-width:120px"></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:9px" id="lib"></div></div>
+
+<!-- DASHBOARD -->
+<div class="pg" id="p-est">
+<div style="font-size:19px;font-weight:700;margin-bottom:14px">Dashboard</div>
+<!-- KEY METRICS -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="dash-metrics">
+<div class="cd" style="text-align:center;margin:0"><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;font-weight:600">This Month</div><div style="font-size:24px;font-weight:700;color:var(--gn)" id="dm-month">$0</div><div style="font-size:10px;color:var(--tx2)" id="dm-month-sub">0 jobs</div></div>
+<div class="cd" style="text-align:center;margin:0"><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;font-weight:600">Last Month</div><div style="font-size:24px;font-weight:700;color:var(--tx)" id="dm-lmonth">$0</div><div style="font-size:10px;color:var(--tx2)" id="dm-lmonth-sub">0 jobs</div></div>
+<div class="cd" style="text-align:center;margin:0"><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;font-weight:600">This Year</div><div style="font-size:24px;font-weight:700;color:var(--bl)" id="dm-year">$0</div><div style="font-size:10px;color:var(--tx2)" id="dm-year-sub">0 jobs</div></div>
+<div class="cd" style="text-align:center;margin:0"><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;font-weight:600">Close Rate</div><div style="font-size:24px;font-weight:700;color:var(--amt)" id="dm-close">0%</div><div style="font-size:10px;color:var(--tx2)" id="dm-close-sub">0 of 0</div></div>
+</div>
+<!-- MONTH COMPARISON BAR -->
+<div class="cd" style="margin-bottom:14px"><div class="hd">Monthly comparison</div>
+<div id="dash-bars" style="display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:10px"></div>
+<div style="display:flex;gap:12px;margin-top:8px;font-size:11px;color:var(--tx2)"><span><span style="display:inline-block;width:10px;height:10px;background:var(--bl);border-radius:2px;margin-right:4px"></span>This year</span><span><span style="display:inline-block;width:10px;height:10px;background:var(--bd);border-radius:2px;margin-right:4px"></span>Last year</span></div></div>
+<!-- MA OVERVIEW -->
+<div class="cd" style="margin-bottom:14px"><div class="hd">Maintenance agreements <span id="ma-count" style="float:right;font-size:12px;color:var(--bl);font-weight:600"></span></div><div id="ma-list" style="max-height:200px;overflow-y:auto"><div style="font-size:12px;color:var(--tx3)">Connect to database to see MAs</div></div></div>
+<!-- RECENT ESTIMATES -->
+<div class="cd"><div class="hd">Recent estimates</div><div id="ests"></div></div>
+</div>
+
+<!-- CLIENT VIEW -->
+<div class="pg" id="p-cli"><div style="max-width:700px;margin:0 auto">
+<div style="border-bottom:.5px solid var(--bd);padding-bottom:14px;margin-bottom:16px"><div id="c-logo"></div><div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">Estimate</div><h1 style="font-size:22px;font-weight:700;margin-bottom:2px" id="c-nm">Residence</h1><p style="font-size:12px;color:var(--tx2)">Prepared by <strong id="c-co">Blue Flame Air Solutions</strong> · <span id="c-dt"></span></p><p style="font-size:11px;color:var(--tx3);margin-top:2px" id="c-ct"></p></div>
+<div id="c-zones"></div>
+<div class="cd"><div class="hd">Why American Standard</div><div class="g2" style="gap:8px"><div style="background:var(--bg2);border-radius:var(--r);padding:10px;display:flex;gap:7px"><i class="ti ti-trophy" style="font-size:18px;color:#D4A017"></i><div><div style="font-size:12px;font-weight:600">Top Tier Satisfaction</div><div style="font-size:11px;color:var(--tx2)">Rated #1 in owner satisfaction.</div></div></div><div style="background:var(--bg2);border-radius:var(--r);padding:10px;display:flex;gap:7px"><i class="ti ti-shield-check" style="font-size:18px;color:var(--gn)"></i><div><div style="font-size:12px;font-weight:600">Top Tier Reliability</div><div style="font-size:11px;color:var(--tx2)">Spine Fin and Duration built.</div></div></div><div style="background:var(--bg2);border-radius:var(--r);padding:10px;display:flex;gap:7px"><i class="ti ti-history" style="font-size:18px;color:var(--bl)"></i><div><div style="font-size:12px;font-weight:600">100+ Years</div><div style="font-size:11px;color:var(--tx2)">A century of HVAC excellence.</div></div></div><div style="background:var(--bg2);border-radius:var(--r);padding:10px;display:flex;gap:7px"><i class="ti ti-leaf" style="font-size:18px;color:#27ae60"></i><div><div style="font-size:12px;font-weight:600">Next-Gen Refrigerant</div><div style="font-size:11px;color:var(--tx2)">Lower GWP for sustainability.</div></div></div></div></div>
+<div style="margin-bottom:16px"><div class="hd">Optional upgrades</div><div id="c-ao"></div></div>
+<div style="margin-bottom:16px"><div class="hd">Your total</div><div class="sb"><div class="sr"><span id="c-sn">-</span><span id="c-sp">-</span></div><div id="c-al"></div><div id="c-tl" style="display:none" class="sr"><span>Tax</span><span id="c-ta">$0</span></div><div class="sr tot"><span>Estimated total</span><span id="c-gr">-</span></div></div></div>
+<div class="cd"><div class="hd">What's included</div><div id="c-wi"></div></div>
+<div class="cd"><div class="hd">Value & protection</div><div id="c-wa"></div></div>
+<div style="height:.5px;background:var(--bd);margin:14px 0"></div>
+<div><div class="hd">Accept this estimate</div><div class="ok" id="c-ok"><i class="ti ti-circle-check" style="font-size:20px;color:var(--gn)"></i><div><strong style="color:var(--gnt)">Accepted!</strong><div style="font-size:11px;color:var(--gn)">We'll contact you within 24 hours.</div></div></div><div id="c-post" style="display:none"><div class="cd"><div class="hd">Invoice <span id="c-inv" style="float:right;font-size:11px;color:var(--tx3)"></span></div><div id="c-invl"></div></div><div class="cd" style="background:#fffbe6;border-color:#f0d060"><div style="display:flex;gap:9px"><i class="ti ti-star" style="font-size:22px;color:#D4A017"></i><div><strong>Love your experience?</strong><br><a id="c-rev" href="#" target="_blank" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:6px 12px;background:#fff;border:1px solid #ddd;border-radius:var(--r);font-size:12px;font-weight:600;color:var(--tx);text-decoration:none"><i class="ti ti-brand-google" style="color:#4285f4"></i> Review on Google</a></div></div></div></div><div id="c-form"><div style="border:.5px solid var(--bd);border-radius:var(--r);padding:10px;margin-bottom:8px"><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">Signature</label><input id="sig-n" style="width:100%;border:none;border-bottom:.5px solid var(--bd2);padding:4px 2px;font-size:13px;font-family:var(--f)"></div><div style="border:.5px solid var(--bd);border-radius:var(--r);padding:10px;margin-bottom:10px"><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">Date</label><input id="sig-d" style="width:100%;border:none;border-bottom:.5px solid var(--bd2);padding:4px 2px;font-size:13px;font-family:var(--f)"></div><button class="bt btb" style="width:100%;padding:11px;font-size:14px;justify-content:center" onclick="doAccept()"><i class="ti ti-check"></i> Accept</button></div></div>
+</div></div>
+
+<!-- SETTINGS -->
+<div class="pg" id="p-set"><div style="font-size:19px;font-weight:700;margin-bottom:14px">Settings</div><div class="cd"><div class="hd">Company</div><div class="g2" style="margin-bottom:8px"><div class="fl"><label>Name</label><input id="s-nm" value="Blue Flame Air Solutions"></div><div class="fl"><label>Phone</label><input id="s-ph" value="(346) 638-2912"></div></div><div class="g2" style="margin-bottom:8px"><div class="fl"><label>Email</label><input id="s-em" value="Info@BlueflameAirSolutions.com"></div><div class="fl"><label>License</label><input id="s-li" value="TACLB00160775E"></div></div><div class="g2" style="margin-bottom:8px"><div class="fl"><label>Logo URL</label><input id="s-lg"></div><div class="fl"><label>Website</label><input id="s-wb" value="https://www.blueflameairsolutions.com"></div></div><div class="g2"><div class="fl"><label>Google Place ID</label><input id="s-gid" value="ChIJe0IZ7NHPQIYRhbLcf4UWurk"></div><div class="fl"><label>Materials$</label><input id="s-mc" type="number" value="1100"></div></div></div></div>
+
+<script>
+// === SUPABASE CONNECTION ===
+var SB_URL='https://sfsiwzacblruqgwpdehz.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmc2l3emFjYmxydXFnd3BkZWh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDgyMDYsImV4cCI6MjA5NjUyNDIwNn0.RofGA-WRv_7MbnwEGzKylD4H-zkEZ4b_9Vh_23QRT4o';
+var db=null;var dbOk=false;
+try{db=supabase.createClient(SB_URL,SB_KEY);dbOk=true;console.log('Supabase connected');}catch(e){console.log('Supabase not available, using local data');}
+
+// DB HELPERS
+async function dbSaveCustomer(c){if(!dbOk)return null;try{var{data,error}=await db.from('customers').insert({first_name:c.first,last_name:c.last,phone:c.phone,email:c.email,address:c.address,city:c.city||'Cypress',state:'TX',zip:c.zip,source:c.source,notes:c.notes}).select().single();return error?null:data;}catch(e){return null;}}
+async function dbSearchCustomers(q){if(!dbOk)return[];try{var{data}=await db.from('customers').select('*').or('phone.ilike.%'+q+'%,first_name.ilike.%'+q+'%,last_name.ilike.%'+q+'%,email.ilike.%'+q+'%').limit(10);return data||[];}catch(e){return[];}}
+async function dbGetCustomer(id){if(!dbOk)return null;try{var{data}=await db.from('customers').select('*').eq('id',id).single();return data;}catch(e){return null;}}
+async function dbSaveEstimate(est){if(!dbOk)return null;try{var{data,error}=await db.from('estimates').upsert(est).select().single();return error?null:data;}catch(e){return null;}}
+async function dbGetEstimates(){if(!dbOk)return[];try{var{data}=await db.from('estimates').select('*,customers(first_name,last_name,phone)').order('created_at',{ascending:false}).limit(50);return data||[];}catch(e){return[];}}
+async function dbSaveSale(sale){if(!dbOk)return null;try{var{data,error}=await db.from('sales').insert(sale).select().single();return error?null:data;}catch(e){return null;}}
+async function dbGetSales(period){if(!dbOk)return[];try{var now=new Date();var start;if(period==='month')start=new Date(now.getFullYear(),now.getMonth(),1);else if(period==='year')start=new Date(now.getFullYear(),0,1);else start=new Date(2020,0,1);var{data}=await db.from('sales').select('*,customers(first_name,last_name)').gte('sale_date',start.toISOString().split('T')[0]).order('sale_date',{ascending:false});return data||[];}catch(e){return[];}}
+async function dbGetMAs(){if(!dbOk)return[];try{var{data}=await db.from('maintenance_agreements').select('*,customers(first_name,last_name,phone,address)').order('expiry_date',{ascending:true});return data||[];}catch(e){return[];}}
+async function dbSeedEquipment(){if(!dbOk)return;try{var{count}=await db.from('equipment').select('id',{count:'exact',head:true});if(count>0){console.log('Equipment already seeded: '+count);return;}var rows=U.map(function(u){return{name:u.nm,cat:u.cat,stype:u.st||null,tons:u.tn||null,spec:u.sp||null,cost:u.co,sell:u.se||null,part_number:u.pt||null,description:u.ds||null,img_url:u.im||null,warranty:u.wa||null}});for(var i=0;i<rows.length;i+=50){await db.from('equipment').insert(rows.slice(i,i+50));}console.log('Seeded '+rows.length+' equipment items');}catch(e){console.log('Seed error:',e);}}
+var IS='https://static.wixstatic.com/media/42626e_75807f552d574d098c4969cab8c8b983~mv2.webp/v1/fit/w_500,h_500,q_90/file.webp';
+var IG='https://static.wixstatic.com/media/42626e_acef5f68f2d54b7fb91bed182c602985~mv2.webp/v1/fit/w_500,h_500,q_90/file.webp';
+var IP='https://static.wixstatic.com/media/42626e_96e57c3a9038491597645e7bb8ec748e~mv2.webp/v1/fit/w_500,h_500,q_90/file.webp';
+var wiGas=['New indoor coil and outdoor condenser','New supply and return plenums','New PVC condensate drain lines with float switches','New heater stand for code compliance','New gas flex line and sediment leg','New vent pipe routed to exterior','New condenser pad with disconnect and whip','Liquid line filter drier charged to spec','Coil treatment to disinfect and sanitize','Media filter cabinet','Surge protector'];
+var wiElec=['New indoor air handler and outdoor condenser','New supply and return plenums','New PVC condensate drain lines with float switches','New air handler stand for code compliance','New condenser pad with disconnect and whip','Liquid line filter drier charged to spec','Coil treatment to disinfect and sanitize','Media filter cabinet','Surge protector'];
+var wiComp=['Component replacement as specified','System charged to manufacturer specs','All work meets local codes'];
+var wiI=wiGas.slice();
+var waI=[{d:'1 Year',n:'Maintenance Plan',t:'($118 value)'},{d:'10 Year',n:'Parts Warranty',t:''},{d:'10 Year',n:'Labor Warranty',t:''}];
+function mc(){return parseFloat(document.getElementById('s-mc').value)||1100;}
+// Job type map: which library categories to show for each job type
+var jtCats={'gas-ac':'system','ac-elec':'system','hp-elec':'system','dual':'system','cond-coil':'condenser,coil','furnace-only':'furnace','ah-only':'air-handler,heat-kit'};
+var jtLabels={'gas-ac':'Full System - Gas','ac-elec':'Full Electric','hp-elec':'Heat Pump System','dual':'Dual Fuel','cond-coil':'Condenser + Coil','furnace-only':'Furnace Only','ah-only':'Air Handler Only'};
+var U=[
+// GAS SYSTEMS
+{id:1001,nm:'Silver 14 / 1.5T Gas',cat:'system',st:'gas-ac',tn:'1.5',sp:'14.3 SEER2',co:3588,se:9499,im:IS,ds:'Single-stage 1.5T'},
+{id:1004,nm:'Silver 15 / 1.5T Gas HE',cat:'system',st:'gas-ac',tn:'1.5',sp:'16.0 SEER2',co:4115,se:11099,im:IS,ds:'High-efficiency 1.5T'},
+{id:1010,nm:'Silver 14 / 2T Gas',cat:'system',st:'gas-ac',tn:'2',sp:'14.3 SEER2',co:3694,se:9599,im:IS,ds:'Single-stage 2T'},
+{id:1014,nm:'Silver 15 / 2T Gas HE',cat:'system',st:'gas-ac',tn:'2',sp:'15.2 SEER2',co:4457,se:11599,im:IS,ds:'High-efficiency 2T'},
+{id:1011,nm:'Gold 17 / 2T Gas',cat:'system',st:'gas-ac',tn:'2',sp:'17.1 SEER2',co:5195,se:13268,im:IG,ds:'Multi-speed ComfortSeek'},
+{id:1012,nm:'Platinum 18 / 2T Gas',cat:'system',st:'gas-ac',tn:'2',sp:'18.1 SEER2',co:7172,se:15099,im:IP,ds:'Variable-speed AccuComfort'},
+{id:1013,nm:'Platinum 20 / 2T Gas',cat:'system',st:'gas-ac',tn:'2',sp:'20.6 SEER2',co:8227,se:17288,im:IP,ds:'Highest efficiency'},
+{id:1020,nm:'Silver 14 / 2.5T Gas',cat:'system',st:'gas-ac',tn:'2.5',sp:'14.3 SEER2',co:3841,se:9749,im:IS,ds:'Single-stage 2.5T'},
+{id:1024,nm:'Silver 15 / 2.5T Gas HE',cat:'system',st:'gas-ac',tn:'2.5',sp:'16.0 SEER2',co:4672,se:11749,im:IS,ds:'High-efficiency 2.5T'},
+{id:1030,nm:'Silver 14 / 3T Gas',cat:'system',st:'gas-ac',tn:'3',sp:'14.3 SEER2',co:3970,se:9879,im:IS,ds:'Dependable single-stage'},
+{id:1034,nm:'Silver 15 / 3T Gas HE',cat:'system',st:'gas-ac',tn:'3',sp:'15.2 SEER2',co:4859,se:11899,im:IS,ds:'High-efficiency with HE furnace'},
+{id:1031,nm:'Gold 17 / 3T Gas',cat:'system',st:'gas-ac',tn:'3',sp:'17.1 SEER2',co:5807,se:13768,im:IG,ds:'Multi-speed ComfortSeek'},
+{id:1032,nm:'Platinum 18 / 3T Gas',cat:'system',st:'gas-ac',tn:'3',sp:'18.1 SEER2',co:7949,se:15899,im:IP,ds:'Variable-speed AccuComfort'},
+{id:1033,nm:'Platinum 20 / 3T Gas',cat:'system',st:'gas-ac',tn:'3',sp:'21.6 SEER2',co:8892,se:17988,im:IP,ds:'Highest efficiency Duration compressor'},
+{id:1040,nm:'Silver 14 / 3.5T Gas',cat:'system',st:'gas-ac',tn:'3.5',sp:'14.3 SEER2',co:4284,se:10199,im:IS,ds:'Single-stage 3.5T'},
+{id:1044,nm:'Silver 15 / 3.5T Gas HE',cat:'system',st:'gas-ac',tn:'3.5',sp:'15.2 SEER2',co:5243,se:12199,im:IS,ds:'High-efficiency 3.5T'},
+{id:1050,nm:'Silver 14 / 4T Gas',cat:'system',st:'gas-ac',tn:'4',sp:'13.8 SEER2',co:4426,se:10349,im:IS,ds:'Single-stage 4T'},
+{id:1054,nm:'Silver 15 / 4T Gas HE',cat:'system',st:'gas-ac',tn:'4',sp:'15.2 SEER2',co:5443,se:12349,im:IS,ds:'High-efficiency 4T'},
+{id:1051,nm:'Gold 17 / 4T Gas',cat:'system',st:'gas-ac',tn:'4',sp:'17.1 SEER2',co:6522,se:14268,im:IG,ds:'Gold multi-speed 4T'},
+{id:1052,nm:'Platinum 18 / 4T Gas',cat:'system',st:'gas-ac',tn:'4',sp:'18.1 SEER2',co:8561,se:16399,im:IP,ds:'Platinum VS 4T'},
+{id:1053,nm:'Platinum 20 / 4T Gas',cat:'system',st:'gas-ac',tn:'4',sp:'20.8 SEER2',co:9504,se:18488,im:IP,ds:'Platinum 20 VS 4T'},
+{id:1060,nm:'Silver 14 / 5T Gas',cat:'system',st:'gas-ac',tn:'5',sp:'14.3 SEER2',co:4908,se:10849,im:IS,ds:'Single-stage 5T'},
+{id:1064,nm:'Silver 15 / 5T Gas HE',cat:'system',st:'gas-ac',tn:'5',sp:'15.2 SEER2',co:6067,se:12849,im:IS,ds:'High-efficiency 5T'},
+{id:1061,nm:'Gold 17 / 5T Gas',cat:'system',st:'gas-ac',tn:'5',sp:'16.5 SEER2',co:7271,se:14768,im:IG,ds:'Gold multi-speed 5T'},
+{id:1062,nm:'Platinum 18 / 5T Gas',cat:'system',st:'gas-ac',tn:'5',sp:'18.1 SEER2',co:9351,se:16899,im:IP,ds:'Platinum VS 5T'},
+{id:1063,nm:'Platinum 20 / 5T Gas',cat:'system',st:'gas-ac',tn:'5',sp:'20.6 SEER2',co:10291,se:18988,im:IP,ds:'Platinum 20 VS 5T'},
+// ELECTRIC SYSTEMS
+{id:3001,nm:'Silver 14 / 1.5T Elec',cat:'system',st:'ac-elec',tn:'1.5',sp:'14.3 SEER2',co:3032,se:6288,im:IS},
+{id:3004,nm:'Silver 15 / 1.5T Elec VS',cat:'system',st:'ac-elec',tn:'1.5',sp:'16.0 SEER2',co:3569,se:7485,im:IS},
+{id:3010,nm:'Silver 14 / 2T Elec',cat:'system',st:'ac-elec',tn:'2',sp:'14.3 SEER2',co:3138,se:6488,im:IS},
+{id:3014,nm:'Silver 15 / 2T Elec VS',cat:'system',st:'ac-elec',tn:'2',sp:'16.0 SEER2',co:3911,se:7685,im:IS},
+{id:3011,nm:'Gold 17 / 2T Elec',cat:'system',st:'ac-elec',tn:'2',sp:'17.1 SEER2',co:4735,se:12488,im:IG},
+{id:3012,nm:'Platinum 18 / 2T Elec',cat:'system',st:'ac-elec',tn:'2',sp:'18.1 SEER2',co:6228,se:15185,im:IP},
+{id:3020,nm:'Silver 14 / 2.5T Elec',cat:'system',st:'ac-elec',tn:'2.5',sp:'14.3 SEER2',co:3395,se:6688,im:IS},
+{id:3024,nm:'Silver 15 / 2.5T Elec VS',cat:'system',st:'ac-elec',tn:'2.5',sp:'16.0 SEER2',co:4186,se:7885,im:IS},
+{id:3030,nm:'Silver 14 / 3T Elec',cat:'system',st:'ac-elec',tn:'3',sp:'14.3 SEER2',co:3585,se:6788,im:IS},
+{id:3034,nm:'Silver 15 / 3T Elec VS',cat:'system',st:'ac-elec',tn:'3',sp:'15.2 SEER2',co:4544,se:7985,im:IS},
+{id:3031,nm:'Gold 17 / 3T Elec',cat:'system',st:'ac-elec',tn:'3',sp:'17.1 SEER2',co:5492,se:12988,im:IG},
+{id:3032,nm:'Platinum 18 / 3T Elec',cat:'system',st:'ac-elec',tn:'3',sp:'18.1 SEER2',co:7130,se:15685,im:IP},
+{id:3033,nm:'Platinum 20 / 3T Elec',cat:'system',st:'ac-elec',tn:'3',sp:'21.2 SEER2',co:8073,se:17888,im:IP},
+{id:3040,nm:'Silver 14 / 3.5T Elec',cat:'system',st:'ac-elec',tn:'3.5',sp:'14.3 SEER2',co:3784,se:7088,im:IS},
+{id:3044,nm:'Silver 15 / 3.5T Elec VS',cat:'system',st:'ac-elec',tn:'3.5',sp:'15.2 SEER2',co:4809,se:8285,im:IS},
+{id:3050,nm:'Silver 14 / 4T Elec',cat:'system',st:'ac-elec',tn:'4',sp:'14.3 SEER2',co:4221,se:7288,im:IS},
+{id:3054,nm:'Silver 15 / 4T Elec VS',cat:'system',st:'ac-elec',tn:'4',sp:'15.2 SEER2',co:5203,se:8485,im:IS},
+{id:3051,nm:'Gold 17 / 4T Elec',cat:'system',st:'ac-elec',tn:'4',sp:'17.1 SEER2',co:6621,se:13488,im:IG},
+{id:3052,nm:'Platinum 18 / 4T Elec',cat:'system',st:'ac-elec',tn:'4',sp:'18.1 SEER2',co:8299,se:16185,im:IP},
+{id:3053,nm:'Platinum 20 / 4T Elec',cat:'system',st:'ac-elec',tn:'4',sp:'21.4 SEER2',co:9242,se:17888,im:IP},
+{id:3060,nm:'Silver 14 / 5T Elec',cat:'system',st:'ac-elec',tn:'5',sp:'14.3 SEER2',co:4524,se:7588,im:IS},
+{id:3064,nm:'Silver 15 / 5T Elec VS',cat:'system',st:'ac-elec',tn:'5',sp:'15.2 SEER2',co:5976,se:8785,im:IS},
+{id:3061,nm:'Gold 17 / 5T Elec',cat:'system',st:'ac-elec',tn:'5',sp:'16.5 SEER2',co:7180,se:13988,im:IG},
+{id:3062,nm:'Platinum 18 / 5T Elec',cat:'system',st:'ac-elec',tn:'5',sp:'18.1 SEER2',co:8865,se:16685,im:IP},
+{id:3063,nm:'Platinum 20 / 5T Elec',cat:'system',st:'ac-elec',tn:'5',sp:'21.2 SEER2',co:9805,se:18388,im:IP},
+// HEAT PUMP SYSTEMS
+{id:2001,nm:'Silver 14 HP / 1.5T',cat:'system',st:'hp-elec',tn:'1.5',sp:'14.3 SEER2',co:3521,se:6788,im:IS},
+{id:2004,nm:'Silver 15 HP / 1.5T VS',cat:'system',st:'hp-elec',tn:'1.5',sp:'15.2 SEER2',co:4502,se:8485,im:IS},
+{id:2010,nm:'Silver 14 HP / 2T',cat:'system',st:'hp-elec',tn:'2',sp:'14.3 SEER2',co:3626,se:6988,im:IS},
+{id:2014,nm:'Silver 15 HP / 2T VS',cat:'system',st:'hp-elec',tn:'2',sp:'15.2 SEER2',co:4812,se:8685,im:IS},
+{id:2011,nm:'Gold 17 HP / 2T',cat:'system',st:'hp-elec',tn:'2',sp:'17.1 SEER2',co:5599,se:11599,im:IG},
+{id:2012,nm:'Platinum 18 HP / 2T',cat:'system',st:'hp-elec',tn:'2',sp:'18.1 SEER2',co:6910,se:13685,im:IP},
+{id:2013,nm:'Platinum 20 HP / 2T',cat:'system',st:'hp-elec',tn:'2',sp:'20.0 SEER2',co:7850,se:15388,im:IP},
+{id:2020,nm:'Silver 14 HP / 2.5T',cat:'system',st:'hp-elec',tn:'2.5',sp:'14.3 SEER2',co:3882,se:7188,im:IS},
+{id:2024,nm:'Silver 15 HP / 2.5T VS',cat:'system',st:'hp-elec',tn:'2.5',sp:'15.2 SEER2',co:5073,se:8885,im:IS},
+{id:2030,nm:'Silver 14 HP / 3T',cat:'system',st:'hp-elec',tn:'3',sp:'14.3 SEER2',co:4072,se:7388,im:IS},
+{id:2034,nm:'Silver 15 HP / 3T VS',cat:'system',st:'hp-elec',tn:'3',sp:'16.0 SEER2',co:5423,se:9085,im:IS},
+{id:2031,nm:'Gold 17 HP / 3T',cat:'system',st:'hp-elec',tn:'3',sp:'17.1 SEER2',co:6519,se:12099,im:IG},
+{id:2032,nm:'Platinum 18 HP / 3T',cat:'system',st:'hp-elec',tn:'3',sp:'18.1 SEER2',co:7979,se:14185,im:IP},
+{id:2033,nm:'Platinum 20 HP / 3T',cat:'system',st:'hp-elec',tn:'3',sp:'20.0 SEER2',co:9122,se:15888,im:IP},
+{id:2040,nm:'Silver 14 HP / 3.5T',cat:'system',st:'hp-elec',tn:'3.5',sp:'14.3 SEER2',co:4301,se:7688,im:IS},
+{id:2044,nm:'Silver 15 HP / 3.5T VS',cat:'system',st:'hp-elec',tn:'3.5',sp:'16.0 SEER2',co:5668,se:9385,im:IS},
+{id:2050,nm:'Silver 14 HP / 4T',cat:'system',st:'hp-elec',tn:'4',sp:'14.3 SEER2',co:4707,se:7888,im:IS},
+{id:2054,nm:'Silver 15 HP / 4T VS',cat:'system',st:'hp-elec',tn:'4',sp:'16.0 SEER2',co:6390,se:9585,im:IS},
+{id:2051,nm:'Gold 17 HP / 4T',cat:'system',st:'hp-elec',tn:'4',sp:'17.1 SEER2',co:7811,se:12899,im:IG},
+{id:2052,nm:'Platinum 18 HP / 4T',cat:'system',st:'hp-elec',tn:'4',sp:'18.1 SEER2',co:9308,se:14685,im:IP},
+{id:2053,nm:'Platinum 20 HP / 4T',cat:'system',st:'hp-elec',tn:'4',sp:'20.0 SEER2',co:10251,se:16388,im:IP},
+{id:2060,nm:'Silver 14 HP / 5T',cat:'system',st:'hp-elec',tn:'5',sp:'14.3 SEER2',co:5003,se:8188,im:IS},
+{id:2064,nm:'Silver 15 HP / 5T VS',cat:'system',st:'hp-elec',tn:'5',sp:'15.2 SEER2',co:6780,se:9885,im:IS},
+{id:2061,nm:'Gold 17 HP / 5T',cat:'system',st:'hp-elec',tn:'5',sp:'17.0 SEER2',co:8532,se:13399,im:IG},
+{id:2062,nm:'Platinum 18 HP / 5T',cat:'system',st:'hp-elec',tn:'5',sp:'18.1 SEER2',co:10041,se:15185,im:IP},
+{id:2063,nm:'Platinum 20 HP / 5T',cat:'system',st:'hp-elec',tn:'5',sp:'19.0 SEER2',co:11375,se:16888,im:IP},
+// DUAL FUEL
+{id:4011,nm:'Dual Gold 17 / 2T',cat:'system',st:'dual',tn:'2',sp:'17.1 SEER2',co:6846,se:14268,im:IG},{id:4012,nm:'Dual Plat 20 / 2T',cat:'system',st:'dual',tn:'2',sp:'21.4 SEER2',co:9024,se:17988,im:IP},
+{id:4031,nm:'Dual Gold 17 / 3T',cat:'system',st:'dual',tn:'3',sp:'17.1 SEER2',co:6834,se:14768,im:IG},{id:4032,nm:'Dual Plat 18 / 3T',cat:'system',st:'dual',tn:'3',sp:'18.1 SEER2',co:8798,se:16399,im:IP},
+{id:4041,nm:'Dual Gold 17 / 4T',cat:'system',st:'dual',tn:'4',sp:'17.1 SEER2',co:7910,se:15268,im:IG},{id:4042,nm:'Dual Plat 18 / 4T',cat:'system',st:'dual',tn:'4',sp:'18.1 SEER2',co:9570,se:16899,im:IP},{id:4043,nm:'Dual Plat 20 / 4T',cat:'system',st:'dual',tn:'4',sp:'20.0 SEER2',co:10690,se:18488,im:IP},
+{id:4061,nm:'Dual Gold 17 / 5T',cat:'system',st:'dual',tn:'5',sp:'16.5 SEER2',co:8659,se:15768,im:IG},{id:4062,nm:'Dual Plat 18 / 5T',cat:'system',st:'dual',tn:'5',sp:'18.1 SEER2',co:10527,se:17399,im:IP},{id:4063,nm:'Dual Plat 20 / 5T',cat:'system',st:'dual',tn:'5',sp:'18.4 SEER2',co:11470,se:18988,im:IP},
+// FURNACES
+{id:7101,nm:'80% Silver Entry 40K',cat:'furnace',sp:'32,300BTU 80%',co:1106,pt:'S8B1A040'},{id:7102,nm:'80% Silver Entry 60K',cat:'furnace',sp:'48,700BTU 80%',co:1167,pt:'S8B1B060'},{id:7103,nm:'80% Silver Entry 80K',cat:'furnace',sp:'65,100BTU 80%',co:1219,pt:'S8B1B080'},{id:7104,nm:'80% Silver Entry 100K',cat:'furnace',sp:'80,700BTU 80%',co:1291,pt:'S8B1C100'},{id:7105,nm:'80% Silver Entry 120K',cat:'furnace',sp:'98,000BTU 80%',co:1334,pt:'S8B1D120'},
+{id:7200,nm:'80% Silver HE 40K',cat:'furnace',sp:'32,300BTU 80% HE',co:1292,pt:'S8X1A040'},{id:7201,nm:'80% Silver HE 60K',cat:'furnace',sp:'48,700BTU 80% HE',co:1361,pt:'S8X1B060'},{id:7202,nm:'80% Silver HE 80K',cat:'furnace',sp:'65,100BTU 80% HE',co:1417,pt:'S8X1B080'},{id:7203,nm:'80% Silver HE 100K',cat:'furnace',sp:'80,700BTU 80% HE',co:1500,pt:'S8X1C100'},
+{id:7300,nm:'80% Plat VS 40K',cat:'furnace',sp:'32,200BTU VS',co:1849,pt:'S8V2A040'},{id:7301,nm:'80% Plat VS 60K',cat:'furnace',sp:'48,700BTU VS',co:1961,pt:'S8V2B060'},{id:7302,nm:'80% Plat VS 80K',cat:'furnace',sp:'65,000BTU VS',co:2020,pt:'S8V2B080'},{id:7303,nm:'80% Plat VS 100K',cat:'furnace',sp:'80,600BTU VS',co:2137,pt:'S8V2C100'},{id:7304,nm:'80% Plat VS 120K',cat:'furnace',sp:'98,000BTU VS',co:2196,pt:'S8V2D120'},
+{id:7400,nm:'95% Silver HE 40K',cat:'furnace',sp:'39,000BTU 96%',co:2038,pt:'S9X1B040'},{id:7401,nm:'95% Silver HE 60K',cat:'furnace',sp:'77,200BTU 96%',co:2149,pt:'S9X1B060'},{id:7402,nm:'95% Silver HE 100K',cat:'furnace',sp:'97,400BTU 95%',co:2337,pt:'S9X1C100'},
+{id:7500,nm:'95% Plat VS 40K',cat:'furnace',sp:'38,800BTU 96% VS',co:2807,pt:'S9V2B040'},{id:7501,nm:'95% Plat VS 60K',cat:'furnace',sp:'58,200BTU 96% VS',co:2917,pt:'S9V2B060'},{id:7502,nm:'95% Plat VS 80K',cat:'furnace',sp:'77,600BTU 96% VS',co:3135,pt:'S9V2B080'},{id:7503,nm:'95% Plat VS 100K',cat:'furnace',sp:'97,000BTU 96% VS',co:3243,pt:'S9V2C100'},
+// A/C CONDENSERS
+{id:5101,nm:'S14 Cond 1.5T',cat:'condenser',tn:'1.5',sp:'14.3 SEER2',co:1643,pt:'5A7A4018',im:IS},{id:5102,nm:'S14 Cond 2T',cat:'condenser',tn:'2',sp:'14.3 SEER2',co:1749,pt:'5A7A4024',im:IS},{id:5103,nm:'S14 Cond 2.5T',cat:'condenser',tn:'2.5',sp:'14.3 SEER2',co:1856,pt:'5A7A4030',im:IS},{id:5104,nm:'S14 Cond 3T',cat:'condenser',tn:'3',sp:'14.3 SEER2',co:1964,pt:'5A7A4036',im:IS},{id:5105,nm:'S14 Cond 3.5T',cat:'condenser',tn:'3.5',sp:'14.3 SEER2',co:2108,pt:'5A7A4042',im:IS},{id:5106,nm:'S14 Cond 4T',cat:'condenser',tn:'4',sp:'14.3 SEER2',co:2250,pt:'5A7A4048',im:IS},{id:5107,nm:'S14 Cond 5T',cat:'condenser',tn:'5',sp:'14.3 SEER2',co:2536,pt:'5A7A4060',im:IS},
+{id:5201,nm:'S15 Cond 1.5T',cat:'condenser',tn:'1.5',sp:'15.2 SEER2',co:1984,pt:'5A7A5018',im:IS},{id:5202,nm:'S15 Cond 2T',cat:'condenser',tn:'2',sp:'15.2 SEER2',co:2326,pt:'5A7A5024',im:IS},{id:5203,nm:'S15 Cond 2.5T',cat:'condenser',tn:'2.5',sp:'15.2 SEER2',co:2493,pt:'5A7A5030',im:IS},{id:5204,nm:'S15 Cond 3T',cat:'condenser',tn:'3',sp:'15.2 SEER2',co:2659,pt:'5A7A5036',im:IS},{id:5205,nm:'S15 Cond 3.5T',cat:'condenser',tn:'3.5',sp:'15.2 SEER2',co:2869,pt:'5A7A5042',im:IS},{id:5206,nm:'S15 Cond 4T',cat:'condenser',tn:'4',sp:'15.2 SEER2',co:3069,pt:'5A7A5048',im:IS},{id:5207,nm:'S15 Cond 5T',cat:'condenser',tn:'5',sp:'15.2 SEER2',co:3486,pt:'5A7A5060',im:IS},
+{id:5401,nm:'G17 Cond 2T',cat:'condenser',tn:'2',sp:'17.1 SEER2',co:3064,pt:'5A7A7024',im:IG},{id:5402,nm:'G17 Cond 3T',cat:'condenser',tn:'3',sp:'17.1 SEER2',co:3607,pt:'5A7A7036',im:IG},{id:5403,nm:'G17 Cond 4T',cat:'condenser',tn:'4',sp:'17.1 SEER2',co:4148,pt:'5A7A7048',im:IG},{id:5404,nm:'G17 Cond 5T',cat:'condenser',tn:'5',sp:'16.5 SEER2',co:4690,pt:'5A7A7060',im:IG},
+{id:5501,nm:'P18 Cond 2T',cat:'condenser',tn:'2',sp:'18.1 SEER2',co:3821,pt:'5A7V8X24',im:IP},{id:5502,nm:'P18 Cond 3T',cat:'condenser',tn:'3',sp:'18.1 SEER2',co:4368,pt:'5A7V8X36',im:IP},{id:5503,nm:'P18 Cond 4T',cat:'condenser',tn:'4',sp:'18.1 SEER2',co:4921,pt:'5A7V8X48',im:IP},{id:5504,nm:'P18 Cond 5T',cat:'condenser',tn:'5',sp:'18.1 SEER2',co:5470,pt:'5A7V8X60',im:IP},
+{id:5601,nm:'P20 Cond 2T',cat:'condenser',tn:'2',sp:'20.6 SEER2',co:4764,pt:'5A7V0X24',im:IP},{id:5602,nm:'P20 Cond 3T',cat:'condenser',tn:'3',sp:'21.6 SEER2',co:5311,pt:'5A7V0X36',im:IP},{id:5603,nm:'P20 Cond 4T',cat:'condenser',tn:'4',sp:'20.8 SEER2',co:5864,pt:'5A7V0X48',im:IP},{id:5604,nm:'P20 Cond 5T',cat:'condenser',tn:'5',sp:'20.6 SEER2',co:6410,pt:'5A7V0X60',im:IP},
+// HP CONDENSERS
+{id:6101,nm:'S14 HP 1.5T',cat:'hp-condenser',tn:'1.5',sp:'14.3 SEER2',co:2132,pt:'5A6H4018',im:IS},{id:6102,nm:'S14 HP 2T',cat:'hp-condenser',tn:'2',sp:'14.3 SEER2',co:2237,pt:'5A6H4024',im:IS},{id:6103,nm:'S14 HP 2.5T',cat:'hp-condenser',tn:'2.5',sp:'14.3 SEER2',co:2343,pt:'5A6H4030',im:IS},{id:6104,nm:'S14 HP 3T',cat:'hp-condenser',tn:'3',sp:'14.3 SEER2',co:2451,pt:'5A6H4036',im:IS},{id:6105,nm:'S14 HP 3.5T',cat:'hp-condenser',tn:'3.5',sp:'14.3 SEER2',co:2595,pt:'5A6H4042',im:IS},{id:6106,nm:'S14 HP 4T',cat:'hp-condenser',tn:'4',sp:'14.3 SEER2',co:2736,pt:'5A6H4048',im:IS},{id:6107,nm:'S14 HP 5T',cat:'hp-condenser',tn:'5',sp:'14.3 SEER2',co:3015,pt:'5A6H4060',im:IS},
+{id:6201,nm:'S15 HP 1.5T',cat:'hp-condenser',tn:'1.5',sp:'15.2 SEER2',co:2917,pt:'5A6H5018',im:IS},{id:6202,nm:'S15 HP 2T',cat:'hp-condenser',tn:'2',sp:'15.2 SEER2',co:3227,pt:'5A6H5024',im:IS},{id:6203,nm:'S15 HP 2.5T',cat:'hp-condenser',tn:'2.5',sp:'15.2 SEER2',co:3380,pt:'5A6H5030',im:IS},{id:6204,nm:'S15 HP 3T',cat:'hp-condenser',tn:'3',sp:'15.2 SEER2',co:3538,pt:'5A6H5036',im:IS},{id:6205,nm:'S15 HP 3.5T',cat:'hp-condenser',tn:'3.5',sp:'15.2 SEER2',co:3728,pt:'5A6H5042',im:IS},{id:6206,nm:'S15 HP 4T',cat:'hp-condenser',tn:'4',sp:'15.2 SEER2',co:3917,pt:'5A6H5048',im:IS},{id:6207,nm:'S15 HP 5T',cat:'hp-condenser',tn:'5',sp:'15.2 SEER2',co:4290,pt:'5A6H5060',im:IS},
+{id:6401,nm:'G17 HP 2T',cat:'hp-condenser',tn:'2',sp:'17.1 SEER2',co:3928,pt:'5A6H7024',im:IG},{id:6402,nm:'G17 HP 3T',cat:'hp-condenser',tn:'3',sp:'17.1 SEER2',co:4634,pt:'5A6H7036',im:IG},{id:6403,nm:'G17 HP 4T',cat:'hp-condenser',tn:'4',sp:'17.1 SEER2',co:5338,pt:'5A6H7048',im:IG},{id:6404,nm:'G17 HP 5T',cat:'hp-condenser',tn:'5',sp:'17.0 SEER2',co:6042,pt:'5A6H7060',im:IG},
+{id:6501,nm:'P18 HP 2T',cat:'hp-condenser',tn:'2',sp:'18.1 SEER2',co:4503,pt:'5A6V8X24',im:IP},{id:6502,nm:'P18 HP 3T',cat:'hp-condenser',tn:'3',sp:'18.1 SEER2',co:5217,pt:'5A6V8X36',im:IP},{id:6503,nm:'P18 HP 4T',cat:'hp-condenser',tn:'4',sp:'18.1 SEER2',co:5930,pt:'5A6V8X48',im:IP},{id:6504,nm:'P18 HP 5T',cat:'hp-condenser',tn:'5',sp:'18.1 SEER2',co:6646,pt:'5A6V8X60',im:IP},
+{id:6601,nm:'P20 HP 2T',cat:'hp-condenser',tn:'2',sp:'20.0 SEER2',co:5443,pt:'5A6V0X24',im:IP},{id:6602,nm:'P20 HP 3T',cat:'hp-condenser',tn:'3',sp:'20.0 SEER2',co:6160,pt:'5A6V0X36',im:IP},{id:6603,nm:'P20 HP 4T',cat:'hp-condenser',tn:'4',sp:'20.0 SEER2',co:6873,pt:'5A6V0X48',im:IP},{id:6604,nm:'P20 HP 5T',cat:'hp-condenser',tn:'5',sp:'19.0 SEER2',co:7589,pt:'5A6V0X60',im:IP},
+// COILS
+{id:8101,nm:'Box Coil 1.5-3T A',cat:'coil',tn:'1.5',sp:'5TXCA002',co:839,pt:'5TXCA002'},{id:8102,nm:'Box Coil 1.5-3T B',cat:'coil',tn:'2',sp:'5TXCB003',co:818,pt:'5TXCB003'},{id:8103,nm:'Box Coil 2-3.5T',cat:'coil',tn:'2.5',sp:'5TXCB004',co:839,pt:'5TXCB004'},{id:8104,nm:'Box Coil 2-5T',cat:'coil',tn:'3',sp:'5TXCB006',co:957,pt:'5TXCB006'},{id:8106,nm:'Box Coil 3-5T',cat:'coil',tn:'4',sp:'5TXCC007',co:966,pt:'5TXCC007'},{id:8107,nm:'Box Coil 3-5T lg',cat:'coil',tn:'5',sp:'5TXCC009',co:1081,pt:'5TXCC009'},
+{id:8201,nm:'Slab 1.5-3T',cat:'coil',tn:'2',sp:'5PXFH001',co:720,pt:'5PXFH001'},{id:8202,nm:'Slab 2-3.5T',cat:'coil',tn:'3',sp:'5PXFH004',co:790,pt:'5PXFH004'},{id:8203,nm:'Slab 3-5T',cat:'coil',tn:'4',sp:'5PXFH007',co:891,pt:'5PXFH007'},{id:8204,nm:'Slab 3-5T lg',cat:'coil',tn:'5',sp:'5PXFH009',co:998,pt:'5PXFH009'},
+// AIR HANDLERS
+{id:9101,nm:'TEM4 Silver AH 1.5T',cat:'air-handler',tn:'1.5',sp:'18-24K',co:1306,pt:'5TEM4B02'},{id:9102,nm:'TEM4 Silver AH 2.5T',cat:'air-handler',tn:'2.5',sp:'24-36K',co:1546,pt:'5TEM4B04'},{id:9104,nm:'TEM4 Silver AH 3T',cat:'air-handler',tn:'3',sp:'24-42K',co:1516,pt:'5TEM4D04'},{id:9106,nm:'TEM4 Silver AH 4T',cat:'air-handler',tn:'4',sp:'36-48K',co:1811,pt:'5TEM4D06'},{id:9107,nm:'TEM4 Silver AH 5T',cat:'air-handler',tn:'5',sp:'42-60K',co:2222,pt:'5TEM4D07'},
+{id:9201,nm:'TEM6 Gold VS AH 1.5T',cat:'air-handler',tn:'1.5',sp:'18-24K VS',co:1502,pt:'5TEM6B02'},{id:9203,nm:'TEM6 Gold VS AH 3T',cat:'air-handler',tn:'3',sp:'24-42K VS',co:1780,pt:'5TEM6D04'},{id:9205,nm:'TEM6 Gold VS AH 4T',cat:'air-handler',tn:'4',sp:'36-60K VS',co:2313,pt:'5TEM6D06'},{id:9206,nm:'TEM6 Gold VS AH 5T',cat:'air-handler',tn:'5',sp:'42-60K VS',co:2673,pt:'5TEM6D07'},
+{id:9301,nm:'TEMC Plat AH 1.5T',cat:'air-handler',tn:'1.5',sp:'18-24K Link',co:1661,pt:'5TEMCB02'},{id:9303,nm:'TEMC Plat AH 3T',cat:'air-handler',tn:'3',sp:'24-42K Link',co:1994,pt:'5TEMCD04'},{id:9305,nm:'TEMC Plat AH 4T',cat:'air-handler',tn:'4',sp:'36-60K Link',co:2555,pt:'5TEMCD06'},{id:9306,nm:'TEMC Plat AH 5T',cat:'air-handler',tn:'5',sp:'42-60K Link',co:2946,pt:'5TEMCD07'},
+// HEAT KITS
+{id:9501,nm:'Heat Kit 4.8KW',cat:'heat-kit',sp:'4.8KW',co:83,pt:'WEM0502B'},{id:9502,nm:'Heat Kit 9.6KW',cat:'heat-kit',sp:'9.6KW',co:105,pt:'WEM1002B'},{id:9503,nm:'Heat Kit 14.4KW',cat:'heat-kit',sp:'14.4KW',co:160,pt:'WEM1502BV'},{id:9504,nm:'Heat Kit 19.2KW',cat:'heat-kit',sp:'19.2KW',co:177,pt:'WEM2002BV'},
+// CONTROLS
+{id:9601,nm:'Basic 1H/1C Stat',cat:'control',sp:'Programmable',co:98,pt:'ACONT202'},{id:9605,nm:'Nexia 4.3in Stat',cat:'control',sp:'B/W touch',co:220,pt:'ACONT724'},{id:9606,nm:'AS Color 5in Stat',cat:'control',sp:'Color touch',co:353,pt:'ACONT824'},{id:9608,nm:'ALINK360 Hub',cat:'control',sp:'Link360 VS hub',co:663,pt:'ALINK360'},
+// ZONE BOARDS
+{id:9701,nm:'EcoJay 4-Zone Board',cat:'zone-board',sp:'Up to 4 zones',co:350,pt:'ZS4X'},{id:9702,nm:'EcoJay 3-Zone Board',cat:'zone-board',sp:'Up to 3 zones',co:280,pt:'ZS3X'},{id:9703,nm:'AS Link Zone Panel',cat:'zone-board',sp:'Link 4 zones',co:216,pt:'ZZON2PNL'},{id:9704,nm:'AccuLink Zone Panel',cat:'zone-board',sp:'AccuLink control',co:424,pt:'ZZONEPNL'},{id:9705,nm:'AccuLink 7in Touch',cat:'zone-board',sp:'7in zone stat',co:550,pt:'AZON1050'},
+// DAMPERS
+{id:9801,nm:'EcoJay Round 6in',cat:'damper',sp:'6in motorized',co:85,pt:'DSUP-6'},{id:9802,nm:'EcoJay Round 8in',cat:'damper',sp:'8in motorized',co:95,pt:'DSUP-8'},{id:9803,nm:'EcoJay Round 10in',cat:'damper',sp:'10in motorized',co:110,pt:'DSUP-10'},{id:9804,nm:'EcoJay Round 12in',cat:'damper',sp:'12in motorized',co:125,pt:'DSUP-12'},{id:9805,nm:'EcoJay Round 14in',cat:'damper',sp:'14in motorized',co:145,pt:'DSUP-14'},
+{id:9811,nm:'AS Rect 8x12',cat:'damper',sp:'8x12 rect',co:120,pt:'ZDAMP-8x12'},{id:9812,nm:'AS Rect 10x14',cat:'damper',sp:'10x14 rect',co:140,pt:'ZDAMP-10x14'},{id:9813,nm:'AS Rect 12x16',cat:'damper',sp:'12x16 rect',co:160,pt:'ZDAMP-12x16'},
+// IAQ
+{id:9901,nm:'AccuClean 17.5in',cat:'iaq',sp:'17.5in air cleaner',co:1286,pt:'EFD175'},{id:9902,nm:'AccuClean 21in',cat:'iaq',sp:'21in air cleaner',co:1369,pt:'EFD210'},{id:9903,nm:'Media Filter 17.5in',cat:'iaq',sp:'QuickBox',co:213,pt:'EQBFM175'},{id:9904,nm:'Respicaire UV 9in',cat:'iaq',sp:'OdorMiser UV',co:339,pt:'6RDTXN9L'},{id:9905,nm:'Respicaire UV 16in',cat:'iaq',sp:'OdorMiser UV',co:389,pt:'6RDTXN16L'},
+// ACCESSORIES
+{id:9950,nm:'Surge Protector',cat:'accessory',sp:'120/240V',co:49,pt:'DTK-120/240'},{id:9951,nm:'LP Kit',cat:'accessory',sp:'Propane conv',co:83,pt:'BAYLPSS400C'},{id:9952,nm:'Outdoor Sensor',cat:'accessory',sp:'Temp sensor',co:47,pt:'BAYSEN02'},{id:9953,nm:'Wireless Sensor',cat:'accessory',sp:'Indoor RHT',co:67,pt:'ZSENS930'},
+];
+
+// NAV
+function go(p){document.querySelectorAll('.pg').forEach(function(e){e.classList.remove('on')});document.querySelectorAll('.tab').forEach(function(e){e.classList.remove('on')});document.getElementById('p-'+p).classList.add('on');var tabs=['bld','lib','est','cli','set'];tabs.forEach(function(t,i){if(t===p)document.querySelectorAll('.tab')[i].classList.add('on')});if(p==='lib')rL();if(p==='bld')renderZones();if(p==='cli')syncC();}
+
+// ZONES - unified: full systems AND component jobs
+var Z=[{lb:'System 1',jt:'gas-ac',tn:'3',items:[],dl:1500}];
+var cZS=[];
+function addZone(){Z.push({lb:'System '+(Z.length+1),jt:'gas-ac',tn:'3',items:[],dl:1500});renderZones();}
+function rmZone(i){if(Z.length<2)return;Z.splice(i,1);renderZones();}
+var jtOpts=[['gas-ac','Full System - Gas'],['ac-elec','Full Electric'],['hp-elec','Heat Pump System'],['dual','Dual Fuel'],['cond-coil','Condenser + Coil'],['furnace-only','Furnace Only'],['ah-only','Air Handler Only']];
+var tnOpts=['1.5','2','2.5','3','3.5','4','5'];
+
+function renderZones(){
+  var c=document.getElementById('zones');
+  c.innerHTML=Z.map(function(z,i){
+    return '<div class="cd" style="border-left:3px solid var(--bl)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-building" style="color:var(--bl)"></i><input value="'+z.lb+'" style="font-size:14px;font-weight:600;border:none;background:transparent;font-family:var(--f);width:180px" onchange="Z['+i+'].lb=this.value"></div>'+(Z.length>1?'<button class="bt btd" onclick="rmZone('+i+')"><i class="ti ti-x"></i></button>':'')+'</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="fl"><label>Job type</label><select onchange="Z['+i+'].jt=this.value;buildZone('+i+')" style="font-family:var(--f);font-size:12px;padding:6px 8px;border:.5px solid var(--bd2);border-radius:var(--r)">'+jtOpts.map(function(o){return '<option value="'+o[0]+'"'+(z.jt===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>'+
+    '<div class="fl"><label>Tonnage</label><select onchange="Z['+i+'].tn=this.value;buildZone('+i+')" style="font-family:var(--f);font-size:12px;padding:6px 8px;border:.5px solid var(--bd2);border-radius:var(--r)">'+tnOpts.map(function(t){return '<option value="'+t+'"'+(z.tn===t?' selected':'')+'>'+t+'T</option>';}).join('')+'</select></div>'+
+    '<div class="fl"><label>Def. labor</label><input type="number" value="'+z.dl+'" style="width:80px;font-family:var(--f);font-size:12px;padding:6px 8px;border:.5px solid var(--bd2);border-radius:var(--r)" onchange="Z['+i+'].dl=parseFloat(this.value)||0;Z['+i+'].items.forEach(function(s){s.lb=Z['+i+'].dl});buildZone('+i+')"></div></div>'+
+    '<div id="zc-'+i+'"></div></div>';
+  }).join('');
+  Z.forEach(function(z,i){buildZone(i);});
+  rWI();rWA();
+}
+
+function buildZone(zi){
+  var z=Z[zi];var jt=z.jt;var tn=z.tn;
+  var catStr=jtCats[jt]||'system';var catList=catStr.split(',');
+  var isSystem=catList[0]==='system';
+  // Filter library items
+  var m=U.filter(function(u){
+    if(isSystem) return u.cat==='system'&&u.st===jt&&u.tn===tn;
+    else return catList.indexOf(u.cat)>=0&&(!u.tn||u.tn===tn||!isSystem);
+  });
+  m.sort(function(a,b){return a.co-b.co});
+  // Preserve existing selections
+  var old={};z.items.forEach(function(s){if(s.u)old[s.u.id]={lb:s.lb,se:s.se,on:s.on}});
+  z.items=m.map(function(u){var o=old[u.id];return{u:u,lb:o?o.lb:z.dl,se:o?o.se:(u.se||0),on:o!==undefined?o.on:true}});
+  // Also auto-set What's Included based on job type
+  if(jt==='gas-ac'||jt==='dual')wiI=wiGas.slice();
+  else if(jt==='ac-elec'||jt==='hp-elec')wiI=wiElec.slice();
+  else wiI=wiComp.slice();
+  // Render
+  var el=document.getElementById('zc-'+zi);if(!el)return;
+  if(!m.length){el.innerHTML='<div style="font-size:12px;color:var(--tx2);padding:8px">No matching items in library for this config.</div>';rc();return;}
+  el.innerHTML='<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">'+m.length+' items found - check the ones to include:</div>'+
+  z.items.map(function(s,si){
+    var u=s.u;var img=u.im?'<img src="'+u.im+'" style="width:36px;height:36px;object-fit:contain;border-radius:4px;background:var(--bg2);flex-shrink:0">':'';
+    var pf=s.se-(u.co+s.lb+mc());var pp=s.se>0?Math.round(pf/s.se*100):0;
+    return '<div style="border:.5px solid '+(s.on?'var(--bl)':'var(--bd)')+';border-radius:var(--r);padding:8px;margin-bottom:5px;background:'+(s.on?'var(--blb)':'var(--bg)')+'"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+    '<input type="checkbox" '+(s.on?'checked':'')+' onchange="Z['+zi+'].items['+si+'].on=this.checked;buildZone('+zi+')">'+
+    img+'<div style="flex:1;min-width:90px"><div style="font-size:12px;font-weight:600">'+u.nm+'</div><div style="font-size:10px;color:var(--tx2)">'+(u.sp||'')+'</div></div>'+
+    '<div style="font-size:11px;color:var(--tx2)">Cost <strong>$'+u.co.toLocaleString()+'</strong></div>'+
+    (s.on?'<input type="number" value="'+s.lb+'" placeholder="Labor" style="width:60px;font-family:var(--f);font-size:11px;padding:4px;border:.5px solid var(--bd2);border-radius:var(--r)" onchange="Z['+zi+'].items['+si+'].lb=parseFloat(this.value)||0;buildZone('+zi+')">'+
+    '<input type="number" value="'+s.se+'" placeholder="Sell$" style="width:75px;font-family:var(--f);font-size:11px;padding:4px;border:.5px solid var(--bd2);border-radius:var(--r);font-weight:600" onchange="Z['+zi+'].items['+si+'].se=parseFloat(this.value)||0;buildZone('+zi+')">'+
+    '<span style="font-size:10px;white-space:nowrap;color:'+(pf>0?'var(--gn)':'var(--rd)')+'">$'+Math.round(pf).toLocaleString()+' '+pp+'%</span>':'')+'</div></div>';
+  }).join('');
+  rc();
+}
+
+// ADD-ONS from library
+var addons=[];
+var addonPickerOpen=false;
+function showAddonPicker(){
+  addonPickerOpen=!addonPickerOpen;
+  var el=document.getElementById('addon-pick');
+  if(!addonPickerOpen){el.innerHTML='';return;}
+  var cats=['iaq','zone-board','damper','control','heat-kit','accessory'];
+  var items=U.filter(function(u){return cats.indexOf(u.cat)>=0});
+  el.innerHTML='<div style="max-height:300px;overflow-y:auto;border:.5px solid var(--bd);border-radius:var(--r);padding:8px;margin-top:6px">'+
+  items.map(function(u){var added=addons.some(function(a){return a.id===u.id});
+    return '<div class="ar'+(added?' sel':'')+'" onclick="toggleAddon('+u.id+')"><div style="display:flex;align-items:center;gap:6px"><div class="cb">'+(added?'<i class="ti ti-check" style="font-size:8px;color:#fff"></i>':'')+'</div><div><div style="font-size:12px;font-weight:600">'+u.nm+'</div><div style="font-size:10px;color:var(--tx2)">'+(u.sp||'')+' · '+u.cat+'</div></div></div><div style="font-size:11px;font-weight:600;color:var(--gn)">$'+u.co.toLocaleString()+'</div></div>';
+  }).join('')+'</div>';
+}
+function toggleAddon(id){var idx=addons.findIndex(function(a){return a.id===id});if(idx>=0)addons.splice(idx,1);else{var u=U.find(function(x){return x.id===id});if(u)addons.push({id:u.id,nm:u.nm,co:u.co,se:u.se||Math.round(u.co*2.5),lb:0});}showAddonPicker();renderAddons();rc();}
+function renderAddons(){var el=document.getElementById('addon-list');el.innerHTML=addons.map(function(a,i){
+  var pf=a.se-(a.co+a.lb);var pp=a.se>0?Math.round(pf/a.se*100):0;
+  return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:8px 10px;background:var(--blb);border:.5px solid var(--bl);border-radius:var(--r)">'+
+  '<div style="flex:1"><div style="font-size:12px;font-weight:600">'+a.nm+'</div><div style="font-size:10px;color:var(--tx2)">Cost: $'+a.co.toLocaleString()+'</div></div>'+
+  '<div class="fl" style="width:60px"><label style="font-size:10px">Labor</label><input type="number" value="'+(a.lb||0)+'" style="font-size:11px;padding:3px 5px" onchange="addons['+i+'].lb=parseFloat(this.value)||0;renderAddons();rc()"></div>'+
+  '<div class="fl" style="width:75px"><label style="font-size:10px">Sell $</label><input type="number" value="'+a.se+'" style="font-size:11px;padding:3px 5px;font-weight:600" onchange="addons['+i+'].se=parseFloat(this.value)||0;renderAddons();rc()"></div>'+
+  '<span style="font-size:10px;white-space:nowrap;color:'+(pf>0?'var(--gn)':'var(--rd)')+'"><strong>$'+Math.round(pf).toLocaleString()+'</strong><br>'+pp+'%</span>'+
+  '<button class="bt btd" style="padding:2px 6px" onclick="addons.splice('+i+',1);renderAddons();rc()"><i class="ti ti-x"></i></button></div>';
+}).join('');}
+
+// WHAT'S INCLUDED / WARRANTIES
+function rWI(){var el=document.getElementById('wi-list');if(!el)return;el.innerHTML=wiI.map(function(t,i){return '<div class="eli"><input value="'+t.replace(/"/g,'&quot;')+'" onchange="wiI['+i+']=this.value"><button class="bt btd" style="padding:2px 6px" onclick="wiI.splice('+i+',1);rWI()"><i class="ti ti-x"></i></button></div>';}).join('');}
+function rWA(){var el=document.getElementById('wa-list');if(!el)return;el.innerHTML=waI.map(function(w,i){return '<div class="eli"><input value="'+w.d+'" style="width:70px" onchange="waI['+i+'].d=this.value"><input value="'+w.n+'" onchange="waI['+i+'].n=this.value"><input value="'+(w.t||'')+'" style="width:80px" placeholder="note" onchange="waI['+i+'].t=this.value"><button class="bt btd" style="padding:2px 6px" onclick="waI.splice('+i+',1);rWA()"><i class="ti ti-x"></i></button></div>';}).join('');}
+
+// LIBRARY
+function rL(){var c=document.getElementById('lf-c').value,s=document.getElementById('lf-s').value.toLowerCase();var f=U.filter(function(u){if(c!=='all'&&u.cat!==c)return false;if(s&&(u.nm+' '+(u.pt||'')+' '+(u.ds||'')+' '+(u.sp||'')).toLowerCase().indexOf(s)<0)return false;return true});
+document.getElementById('lib').innerHTML=f.length?f.map(function(u){var img=u.im?'<img src="'+u.im+'" style="width:100%;height:65px;object-fit:contain;background:var(--bg2);padding:4px" onerror="this.style.display=\'none\'">':'<div style="height:65px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--tx3)"><i class="ti ti-air-conditioning" style="font-size:18px"></i></div>';
+return '<div data-uid="'+u.id+'" style="border:.5px solid var(--bd);border-radius:12px;overflow:hidden;background:var(--bg)">'+img+'<div style="padding:6px 8px"><div style="font-size:11px;font-weight:600;line-height:1.3">'+u.nm+'</div><div style="font-size:10px;color:var(--tx2)">'+(u.sp||'')+(u.tn?' '+u.tn+'T':'')+'</div><div style="font-size:10px;color:var(--gn);font-weight:600;margin-top:2px">$'+u.co.toLocaleString()+'</div><div style="margin-top:4px;display:flex;gap:3px"><button style="flex:1;padding:5px;font-family:var(--f);font-size:11px;font-weight:600;background:var(--blb);color:var(--blt);border:1px solid var(--bl);border-radius:var(--r);cursor:pointer" onclick="openEd('+u.id+')">Edit</button><button style="padding:5px 7px;font-family:var(--f);font-size:11px;background:#fff5f5;color:var(--rd);border:1px solid rgba(163,45,45,.3);border-radius:var(--r);cursor:pointer" onclick="if(confirm(\'Delete?\'))delU('+u.id+')">Del</button></div></div></div>';}).join(''):'<div style="color:var(--tx2)">No matches.</div>';}
+function delU(id){U=U.filter(function(u){return u.id!==id});rL();}
+var eId=null;
+function openEd(id){eId=id||null;var u=id?U.find(function(x){return x.id===id}):null;document.getElementById('et').textContent=u?'Edit: '+u.nm:'Add new unit';document.getElementById('e-nm').value=u?u.nm:'';document.getElementById('e-cat').value=u?u.cat:'system';document.getElementById('e-tn').value=u&&u.tn?u.tn:'';document.getElementById('e-sp').value=u?u.sp||'':'';document.getElementById('e-co').value=u?u.co:'';document.getElementById('e-se').value=u&&u.se?u.se:'';document.getElementById('e-pt').value=u?u.pt||'':'';document.getElementById('e-st').value=u&&u.st?u.st:'';document.getElementById('e-ds').value=u?u.ds||'':'';document.getElementById('e-im').value=u?u.im||'':'';document.getElementById('e-wa').value=u?u.wa||'':'';document.getElementById('e-del').style.display=u?'inline-flex':'none';document.getElementById('e-file').value='';document.getElementById('emod').style.display='block';document.getElementById('emod').scrollIntoView({behavior:'smooth'});}
+function closeEd(){document.getElementById('emod').style.display='none';eId=null;}
+function delEd(){if(eId&&confirm('Delete?')){delU(eId);closeEd();}}
+function saveEd(){var n=document.getElementById('e-nm').value.trim();if(!n)return alert('Name required');var o={id:eId||Date.now(),nm:n,cat:document.getElementById('e-cat').value,tn:document.getElementById('e-tn').value||undefined,sp:document.getElementById('e-sp').value,co:parseFloat(document.getElementById('e-co').value)||0,se:parseFloat(document.getElementById('e-se').value)||undefined,pt:document.getElementById('e-pt').value,st:document.getElementById('e-st').value||undefined,ds:document.getElementById('e-ds').value,im:document.getElementById('e-im').value.trim(),wa:document.getElementById('e-wa').value};if(eId){var i=U.findIndex(function(u){return u.id===eId});if(i>=0)U[i]=o;}else U.push(o);closeEd();rL();renderZones();}
+
+// PROFIT
+function v(id){return parseFloat(document.getElementById(id).value)||0;}
+function rc(){var duct=v('b-duct');var ps=document.getElementById('ps');var rows='';
+  Z.forEach(function(z,zi){var inc=z.items.filter(function(s){return s.on});
+    if(inc.length&&Z.length>1)rows+='<div style="font-size:11px;font-weight:600;color:var(--bl);padding:4px 0;'+(zi>0?'border-top:.5px solid var(--bd);margin-top:4px':'')+'">'+z.lb+'</div>';
+    inc.forEach(function(s){var pf=s.se-(s.u.co+s.lb+mc());var pp=s.se>0?Math.round(pf/s.se*100):0;rows+='<div class="sr"><span>'+s.u.nm+' $'+s.se.toLocaleString()+'</span><span style="color:'+(pf>0?'var(--gn)':'var(--rd)')+';font-weight:600">$'+Math.round(pf).toLocaleString()+' ('+pp+'%)</span></div>';});
+  });
+  addons.forEach(function(a){var pf=a.se-(a.co+(a.lb||0));var pp=a.se>0?Math.round(pf/a.se*100):0;rows+='<div class="sr"><span>'+a.nm+' $'+a.se.toLocaleString()+'</span><span style="color:'+(pf>0?'var(--gn)':'var(--rd)')+';font-weight:600">$'+Math.round(pf).toLocaleString()+' ('+pp+'%)</span></div>';});
+  if(duct>0)rows+='<div class="sr" style="font-size:11px;color:var(--tx2)"><span>Ductwork $'+duct.toLocaleString()+' flat</span></div>';
+  if(!rows)rows='<div class="sr" style="color:var(--tx3)">No items selected</div>';
+  ps.innerHTML=rows;
+}
+function genLink(){var nm=getCustomerName();var slug=nm.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-')+'-'+Math.floor(Math.random()*9000+1000);var url=(document.getElementById('s-wb').value||'https://blueflameairsolutions.com').replace(/\/$/,'')+'/estimate/'+slug;document.getElementById('lu').textContent=url;document.getElementById('lo').style.display='block';document.getElementById('qr').src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(url);
+  // Save to DB
+  if(dbOk){(async function(){
+    var custId=document.getElementById('b-cust-id').value;
+    if(!custId){var c=await dbSaveCustomer({first:document.getElementById('b-first').value,last:document.getElementById('b-last').value,phone:document.getElementById('b-phone').value,email:document.getElementById('b-email').value,address:document.getElementById('b-addr').value});if(c)custId=c.id;}
+    var zoneData=Z.map(function(z){var inc=z.items.filter(function(s){return s.on});return{label:z.lb,job_type:z.jt,tonnage:z.tn,items:inc.map(function(s){return{name:s.u.nm,cost:s.u.co,sell:s.se,labor:s.lb}})};});
+    var est={slug:slug,customer_id:custId||null,customer_name:nm,customer_phone:document.getElementById('b-phone').value,customer_email:document.getElementById('b-email').value,customer_address:document.getElementById('b-addr').value,system_type:Z[0].jt,tonnage:Z[0].tn,mode:'system',show_financing:document.getElementById('b-fin').checked,charge_tax:document.getElementById('b-tax').checked,tax_rate:parseFloat(document.getElementById('b-taxr').value)||8.25,ductwork_cost:v('b-duct'),custom_components:JSON.stringify(zoneData),addons:JSON.stringify(addons),whats_included:JSON.stringify(wiI),warranties:JSON.stringify(waI)};
+    var saved=await dbSaveEstimate(est);
+    if(saved)console.log('Estimate saved:',saved.id);
+  })();}
+  var d=document.createElement('div');d.style.cssText='display:flex;justify-content:space-between;padding:9px 12px;border:.5px solid var(--bd);border-radius:var(--r);margin-bottom:6px;background:var(--bg)';d.innerHTML='<div><strong>'+nm+'</strong><div style="font-size:11px;color:var(--tx2)">'+Z.map(function(z){return z.tn+'T '+z.jt}).join(' + ')+'</div></div><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--amb);color:var(--amt);font-weight:600">Pending</span>';document.getElementById('ests').appendChild(d);}
+
+// CLIENT VIEW
+var cAO=0;
+function syncC(){
+  document.getElementById('c-nm').textContent=getCustomerName()||'Your Residence';
+  document.getElementById('c-co').textContent=document.getElementById('s-nm').value;
+  document.getElementById('brand').textContent=document.getElementById('s-nm').value+' Estimates';
+  document.getElementById('c-ct').textContent=document.getElementById('s-ph').value+' · '+document.getElementById('s-em').value+' · '+document.getElementById('s-li').value;
+  var lg=document.getElementById('s-lg').value;document.getElementById('c-logo').innerHTML=lg?'<img src="'+lg+'" style="max-height:36px" onerror="this.style.display=\'none\'">':'';
+  document.getElementById('c-dt').textContent=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  var showFin=document.getElementById('b-fin').checked;
+  document.getElementById('c-wi').innerHTML=wiI.map(function(t){return '<div class="wi"><i class="ti ti-check"></i> '+t+'</div>'}).join('');
+  var wC=['var(--gnb)','var(--blb)','var(--amb)'],wT=['var(--gnt)','var(--blt)','var(--amt)'];
+  document.getElementById('c-wa').innerHTML='<div style="display:grid;grid-template-columns:repeat('+Math.min(waI.length,3)+',1fr);gap:8px">'+waI.map(function(w,i){return '<div style="background:'+wC[i%3]+';border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:'+wT[i%3]+'">'+w.d+'</div><div style="font-size:11px;color:'+wT[i%3]+';margin-top:2px">'+w.n+'</div></div>'}).join('')+'</div>';
+  // Per-zone tier cards
+  if(!cZS.length||cZS.length!==Z.length)cZS=Z.map(function(){return 0});
+  var html='';
+  Z.forEach(function(z,zi){
+    var inc=z.items.filter(function(s){return s.on});
+    if(Z.length>1)html+='<div style="font-size:14px;font-weight:600;margin-bottom:8px;margin-top:'+(zi>0?'16px':'0')+'"><i class="ti ti-building" style="color:var(--bl)"></i> '+z.lb+' <span style="font-size:12px;color:var(--tx2);font-weight:400">('+z.tn+'T)</span></div>';
+    var cols=Math.min(inc.length,3);
+    html+='<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:8px;margin-bottom:10px">';
+    html+=inc.map(function(s,si){
+      var u=s.u;var img=u.im?'<img src="'+u.im+'" style="width:100%;height:80px;object-fit:contain;background:var(--bg2);padding:4px">':'<div style="height:80px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--tx3)"><i class="ti ti-air-conditioning" style="font-size:20px"></i></div>';
+      var mo=Math.round(s.se/60);var fin=showFin?'<div style="font-size:11px;color:var(--tx2)">~$'+mo+'/mo x60mo*</div>':'';
+      var isSel=cZS[zi]===si;
+      return '<div class="tc'+(isSel?' sel':'')+'" onclick="cZS['+zi+']='+si+';syncC()"><div class="ck"><i class="ti ti-check" style="font-size:9px;color:#fff"></i></div>'+img+'<div style="padding:8px"><div style="font-size:12px;font-weight:600;margin-bottom:2px">'+u.nm+'</div><div style="font-size:16px;font-weight:700;color:var(--bl)">$'+s.se.toLocaleString()+'</div>'+fin+'<div style="font-size:10px;color:var(--tx2);margin-top:3px">'+(u.sp||'')+(u.ds?' - '+u.ds:'')+'</div></div></div>';
+    }).join('');
+    html+='</div>';
+  });
+  if(showFin)html+='<div style="font-size:10px;color:var(--tx3);margin-bottom:6px">*0% APR 60mo w/ approved credit.</div>';
+  document.getElementById('c-zones').innerHTML=html;
+  // Addon display for client
+  var ac=document.getElementById('c-ao');ac.innerHTML='';
+  addons.forEach(function(a){var div=document.createElement('div');div.className='ar';div.setAttribute('data-price',a.se);div.innerHTML='<div style="display:flex;align-items:center;gap:6px"><div class="cb"><i class="ti ti-check" style="font-size:8px;color:#fff;display:none"></i></div><div style="font-size:12px;font-weight:600">'+a.nm+'</div></div><div style="font-size:12px;font-weight:700;color:var(--bl)">+$'+a.se.toLocaleString()+'</div>';div.onclick=function(){div.classList.toggle('sel');var ck=div.querySelector('.ti-check');if(ck)ck.style.display=div.classList.contains('sel')?'':'none';cAO=0;document.querySelectorAll('#c-ao .ar.sel').forEach(function(r){cAO+=parseInt(r.getAttribute('data-price'))});uCT()};ac.appendChild(div)});
+  cAO=0;uCT();
+}
+function uCT(){
+  var total=0,names=[];Z.forEach(function(z,zi){var inc=z.items.filter(function(s){return s.on});var pk=inc[cZS[zi]||0];if(pk){total+=pk.se;names.push(pk.u.nm)}});
+  document.getElementById('c-sn').textContent=names.join(' + ')||'-';document.getElementById('c-sp').textContent='$'+total.toLocaleString();
+  var lines='',duct=v('b-duct');if(duct>0)lines+='<div class="sr"><span>Ductwork</span><span>+$'+duct.toLocaleString()+'</span></div>';
+  document.querySelectorAll('#c-ao .ar.sel').forEach(function(r){var nm=r.querySelector('[style*="font-weight:600"]');if(nm)lines+='<div class="sr"><span>'+nm.textContent+'</span><span>+$'+parseInt(r.getAttribute('data-price')).toLocaleString()+'</span></div>'});
+  document.getElementById('c-al').innerHTML=lines;
+  var sub=total+cAO+duct;var tax=document.getElementById('b-tax').checked,tr=v('b-taxr')/100,ta=tax?Math.round(sub*tr):0;
+  document.getElementById('c-tl').style.display=tax?'flex':'none';document.getElementById('c-ta').textContent='$'+ta.toLocaleString();
+  document.getElementById('c-gr').textContent='$'+(sub+ta).toLocaleString();
+}
+function doAccept(){if(!document.getElementById('sig-n').value.trim()||!document.getElementById('sig-d').value.trim())return alert('Name and date required');
+  document.getElementById('c-form').style.display='none';document.getElementById('c-ok').classList.add('show');document.getElementById('c-post').style.display='block';
+  document.getElementById('c-inv').textContent='BF-'+new Date().getFullYear()+'-'+Math.floor(Math.random()*9000+1000);
+  var lines='',total=0;Z.forEach(function(z,zi){var inc=z.items.filter(function(s){return s.on});var pk=inc[cZS[zi]||0];if(pk){total+=pk.se;lines+='<div class="sr"><span>'+(Z.length>1?z.lb+': ':'')+pk.u.nm+'</span><span>$'+pk.se.toLocaleString()+'</span></div>'}});
+  addons.forEach(function(a){total+=a.se;lines+='<div class="sr"><span>'+a.nm+'</span><span>$'+a.se.toLocaleString()+'</span></div>'});
+  var duct=v('b-duct');if(duct>0){total+=duct;lines+='<div class="sr"><span>Ductwork</span><span>$'+duct.toLocaleString()+'</span></div>';}
+  var tax=document.getElementById('b-tax').checked,tr=v('b-taxr')/100,ta=tax?Math.round(total*tr):0;if(ta>0)lines+='<div class="sr"><span>Tax</span><span>$'+ta.toLocaleString()+'</span></div>';
+  lines+='<div class="sr tot"><span>Total</span><span>$'+(total+ta).toLocaleString()+'</span></div>';
+  lines+='<div style="margin-top:6px;font-size:11px;color:var(--tx2)">Signed: '+document.getElementById('sig-n').value+' '+document.getElementById('sig-d').value+'</div>';
+  document.getElementById('c-invl').innerHTML=lines;
+  document.getElementById('c-rev').href='https://search.google.com/local/writereview?placeid='+(document.getElementById('s-gid').value||'ChIJe0IZ7NHPQIYRhbLcf4UWurk');
+  // Save sale to DB
+  if(dbOk){(async function(){
+    var custId=document.getElementById('b-cust-id').value||null;
+    var eqNames=[];Z.forEach(function(z){var inc=z.items.filter(function(s){return s.on});var pk=inc[cZS[z]||0];if(pk)eqNames.push(pk.u.nm);});
+    await dbSaveSale({customer_id:custId,sale_date:new Date().toISOString().split('T')[0],job_type:Z[0].jt,tonnage:Z[0].tn,equipment_sold:eqNames.join(', '),total_amount:total+ta,cost_total:0,profit:0,status:'scheduled',notes:'Accepted via estimate tool'});
+  })();}
+}
+
+// Event delegation for library
+document.getElementById('lib').addEventListener('click',function(e){var btn=e.target.closest('button');if(!btn)return;var card=btn.closest('[data-uid]');if(!card)return;var uid=parseInt(card.getAttribute('data-uid'));if(btn.textContent.trim()==='Edit')openEd(uid);if(btn.textContent.trim()==='Del'&&confirm('Delete?'))delU(uid);});
+
+// CUSTOMER SEARCH
+var searchTimer=null;
+function searchCustomer(q){clearTimeout(searchTimer);if(q.length<2){document.getElementById('b-results').innerHTML='';return;}searchTimer=setTimeout(async function(){var results=await dbSearchCustomers(q);var el=document.getElementById('b-results');if(!results.length){el.innerHTML=q.length>2?'<div style="font-size:11px;color:var(--tx3);padding:4px">No matches — new customer</div>':'';return;}el.innerHTML=results.map(function(c){return'<div class="ar" onclick="selectCustomer(\''+c.id+'\')"><div><div style="font-size:12px;font-weight:600">'+(c.first_name||'')+' '+(c.last_name||'')+'</div><div style="font-size:10px;color:var(--tx2)">'+(c.phone||'')+' · '+(c.address||'')+'</div></div></div>';}).join('');},300);}
+function selectCustomer(id){dbGetCustomer(id).then(function(c){if(!c)return;document.getElementById('b-cust-id').value=c.id;document.getElementById('b-first').value=c.first_name||'';document.getElementById('b-last').value=c.last_name||'';document.getElementById('b-phone').value=c.phone||'';document.getElementById('b-email').value=c.email||'';document.getElementById('b-addr').value=(c.address||'')+(c.city?', '+c.city:'')+(c.zip?' '+c.zip:'');document.getElementById('b-results').innerHTML='<div style="font-size:11px;color:var(--gn);padding:4px"><i class="ti ti-check"></i> Existing customer loaded</div>';document.getElementById('b-search').value='';});}
+function getCustomerName(){return((document.getElementById('b-first').value||'')+' '+(document.getElementById('b-last').value||'')).trim()||'Customer';}
+
+// INIT
+async function init(){
+  // Show DB status
+  var st=document.getElementById('db-status');
+  if(dbOk){st.textContent='DB Connected';st.style.background='var(--gnb)';st.style.color='var(--gnt)';await dbSeedEquipment();}
+  else{st.textContent='Offline Mode';st.style.background='var(--amb)';st.style.color='var(--amt)';}
+  renderZones();rc();
+  // Load saved estimates
+  if(dbOk)loadEstimates();
+}
+async function loadEstimates(){
+  var ests=await dbGetEstimates();var el=document.getElementById('ests');
+  ests.forEach(function(e){var nm=(e.customers?e.customers.first_name+' '+e.customers.last_name:e.customer_name)||'Unknown';var d=document.createElement('div');d.style.cssText='display:flex;justify-content:space-between;padding:9px 12px;border:.5px solid var(--bd);border-radius:var(--r);margin-bottom:6px;background:var(--bg)';var badge=e.status==='accepted'?'background:var(--gnb);color:var(--gnt)':e.status==='viewed'?'background:var(--blb);color:var(--blt)':'background:var(--amb);color:var(--amt)';d.innerHTML='<div><strong>'+nm+'</strong><div style="font-size:11px;color:var(--tx2)">'+(e.system_type||'')+' '+(e.tonnage||'')+'T · '+new Date(e.created_at).toLocaleDateString()+'</div></div><span style="font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;'+badge+'">'+(e.status||'pending')+'</span>';el.appendChild(d);});
+  // Dashboard metrics
+  var totalEst=ests.length;var accepted=ests.filter(function(e){return e.status==='accepted'}).length;
+  document.getElementById('dm-close').textContent=totalEst>0?Math.round(accepted/totalEst*100)+'%':'--';
+  document.getElementById('dm-close-sub').textContent=accepted+' of '+totalEst+' estimates';
+  // Load sales
+  await loadDashboard();
+  await loadMAs();
+}
+async function loadDashboard(){
+  var now=new Date();var thisMonth=await dbGetSales('month');var thisYear=await dbGetSales('year');
+  // Last month
+  var lmStart=new Date(now.getFullYear(),now.getMonth()-1,1);var lmEnd=new Date(now.getFullYear(),now.getMonth(),0);
+  var allSales=await dbGetSales('all');
+  var lastMonth=allSales.filter(function(s){var d=new Date(s.sale_date);return d>=lmStart&&d<=lmEnd;});
+  // Last year same period
+  var lyStart=new Date(now.getFullYear()-1,0,1);var lyEnd=new Date(now.getFullYear()-1,11,31);
+  var lastYear=allSales.filter(function(s){var d=new Date(s.sale_date);return d>=lyStart&&d<=lyEnd;});
+  // Calculate totals
+  var tmRev=thisMonth.reduce(function(a,s){return a+(s.total_amount||0)},0);
+  var lmRev=lastMonth.reduce(function(a,s){return a+(s.total_amount||0)},0);
+  var tyRev=thisYear.reduce(function(a,s){return a+(s.total_amount||0)},0);
+  document.getElementById('dm-month').textContent='$'+tmRev.toLocaleString();
+  document.getElementById('dm-month-sub').textContent=thisMonth.length+' jobs'+(lmRev>0?' · '+(tmRev>lmRev?'+':'')+Math.round((tmRev-lmRev)/lmRev*100)+'% vs last mo':'');
+  document.getElementById('dm-lmonth').textContent='$'+lmRev.toLocaleString();
+  document.getElementById('dm-lmonth-sub').textContent=lastMonth.length+' jobs';
+  document.getElementById('dm-year').textContent='$'+tyRev.toLocaleString();
+  document.getElementById('dm-year-sub').textContent=thisYear.length+' jobs';
+  // Monthly bars
+  var bars=document.getElementById('dash-bars');bars.innerHTML='';
+  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var tyByMonth=new Array(12).fill(0);var lyByMonth=new Array(12).fill(0);
+  thisYear.forEach(function(s){var m=new Date(s.sale_date).getMonth();tyByMonth[m]+=(s.total_amount||0);});
+  lastYear.forEach(function(s){var m=new Date(s.sale_date).getMonth();lyByMonth[m]+=(s.total_amount||0);});
+  var maxVal=Math.max.apply(null,tyByMonth.concat(lyByMonth))||1;
+  for(var i=0;i<12;i++){
+    var tyH=Math.round(tyByMonth[i]/maxVal*100);var lyH=Math.round(lyByMonth[i]/maxVal*100);
+    bars.innerHTML+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><div style="display:flex;gap:2px;align-items:flex-end;height:100px"><div style="width:12px;background:var(--bd);border-radius:2px 2px 0 0;height:'+lyH+'px"></div><div style="width:12px;background:var(--bl);border-radius:2px 2px 0 0;height:'+tyH+'px"></div></div><div style="font-size:9px;color:var(--tx3)">'+months[i]+'</div></div>';
+  }
+}
+async function loadMAs(){
+  var mas=await dbGetMAs();var el=document.getElementById('ma-list');
+  var active=mas.filter(function(m){return m.status==='active'});
+  document.getElementById('ma-count').textContent=active.length+' active';
+  if(!mas.length){el.innerHTML='<div style="font-size:12px;color:var(--tx3)">No maintenance agreements yet</div>';return;}
+  el.innerHTML=mas.map(function(m){
+    var nm=m.customers?(m.customers.first_name+' '+m.customers.last_name):'Unknown';
+    var exp=m.expiry_date?new Date(m.expiry_date):null;
+    var daysLeft=exp?Math.round((exp-new Date())/(1000*60*60*24)):null;
+    var urgent=daysLeft!==null&&daysLeft<30;
+    var badge=m.status==='active'?(urgent?'background:#FEE2E2;color:var(--rd)':'background:var(--gnb);color:var(--gnt)'):'background:var(--bg2);color:var(--tx3)';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:.5px solid var(--bd);border-radius:var(--r);margin-bottom:5px"><div><div style="font-size:12px;font-weight:600">'+nm+'</div><div style="font-size:10px;color:var(--tx2)">'+(m.plan_name||'Standard')+' · $'+(m.price||0)+'/yr'+(m.next_service_date?' · Next service: '+new Date(m.next_service_date).toLocaleDateString():'')+'</div></div><div style="text-align:right"><span style="font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;'+badge+'">'+(urgent?'Expiring in '+daysLeft+'d':m.status)+'</span></div></div>';
+  }).join('');
+}
+init();
+</script></body></html>
